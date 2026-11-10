@@ -982,6 +982,30 @@ namespace MetaDataIAPlugin
                 }
             }
 
+            if (kind != MediaKind.Logo && settings.MediaUseLaunchBox)
+            {
+                if (!LaunchBoxPluginService.IsInstalled(playniteApi))
+                {
+                    AddDiagnostic(diagnostics, MetaDataIASettings.SourceLaunchBox, Loc("MTDA_MediaDiagLaunchBoxNotInstalled", "LaunchBox Metadata Provider add-on is not installed"));
+                }
+                else
+                {
+                    try
+                    {
+                        var sourceCandidates = await GetLaunchBoxCandidates(game, kind, manualSearch ? effectiveSearchText : null, cancelToken).ConfigureAwait(false);
+                        AddSourceCandidates(candidates, diagnostics, MetaDataIASettings.SourceLaunchBox, sourceCandidates);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch
+                    {
+                        AddDiagnostic(diagnostics, MetaDataIASettings.SourceLaunchBox, Loc("MTDA_MediaDiagSourceError", "source error or rejected filters"));
+                    }
+                }
+            }
+
             if (kind != MediaKind.Logo && settings.MediaUseIgdb)
             {
                 if (string.IsNullOrWhiteSpace(settings.IgdbClientId) ||
@@ -1077,6 +1101,7 @@ namespace MetaDataIAPlugin
                 settings.MediaUseGiantBomb.ToString(),
                 settings.MediaUseMobyGames.ToString(),
                 settings.MediaUseTheGamesDb.ToString(),
+                settings.MediaUseLaunchBox.ToString(),
                 settings.MediaUseIgdb.ToString(),
                 settings.MediaUseIgn.ToString(),
                 GetPlayniteCoverRatioCacheKey(),
@@ -1826,6 +1851,51 @@ namespace MetaDataIAPlugin
                 .Where(x => x != null && !string.IsNullOrWhiteSpace(x.Url))
                 .Take(Math.Max(1, Math.Min(24, settings.MediaSearchMaxResults)))
                 .ToList();
+        }
+
+        /// <summary>
+        /// One candidate per media kind from the installed LaunchBox Metadata Provider add-on.
+        /// That add-on picks the image itself using its own image-type, region and size settings.
+        /// For a manual search the refined text is matched instead of the library title.
+        /// </summary>
+        private async Task<List<MediaCandidate>> GetLaunchBoxCandidates(Game game, MediaKind kind, string manualSearchText, CancellationToken cancelToken)
+        {
+            if (game == null || kind == MediaKind.Logo)
+            {
+                return new List<MediaCandidate>();
+            }
+
+            var lookupGame = game;
+            if (!string.IsNullOrWhiteSpace(manualSearchText) &&
+                !string.Equals(manualSearchText.Trim(), (game.Name ?? string.Empty).Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                lookupGame = new Game(manualSearchText.Trim())
+                {
+                    Id = game.Id,
+                    PlatformIds = game.PlatformIds
+                };
+            }
+
+            var media = await new LaunchBoxPluginService(playniteApi, settings).GetMediaAsync(lookupGame, kind, cancelToken).ConfigureAwait(false);
+            if (media == null || string.IsNullOrWhiteSpace(media.Path))
+            {
+                return new List<MediaCandidate>();
+            }
+
+            return new List<MediaCandidate>
+            {
+                new MediaCandidate
+                {
+                    Url = media.Path,
+                    Style = Loc("MTDA_LaunchBoxMediaStyle", "LaunchBox Games Database"),
+                    Mime = string.Equals(media.Extension, ".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg",
+                    Score = kind == MediaKind.Cover ? 60 : 50,
+                    Extension = media.Extension,
+                    SourceName = MetaDataIASettings.SourceLaunchBox,
+                    SourcePriority = kind == MediaKind.Cover ? 44 : 38,
+                    IsOfficial = false
+                }
+            };
         }
 
         private static Tuple<int, int> ParseTheGamesDbResolution(string value)

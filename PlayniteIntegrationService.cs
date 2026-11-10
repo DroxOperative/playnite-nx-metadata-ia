@@ -150,13 +150,28 @@ namespace MetaDataIAPlugin
                 return null;
             }
 
-            var metadata = result.Metadata;
+            var sourceName = string.IsNullOrWhiteSpace(result.IntegrationName)
+                ? MetaDataIASettings.SourceOriginIntegration
+                : result.IntegrationName + " (" + MetaDataIASettings.SourceOriginIntegration + ")";
+            return ToContext(result.Metadata, game, sourceName);
+        }
+
+        /// <summary>
+        /// Converts metadata returned by any Playnite metadata provider into AI factual context
+        /// under the given source name. Used for origin library integrations and for
+        /// installed metadata plugins such as the LaunchBox Metadata Provider.
+        /// </summary>
+        public OfficialStoreMetadata ToContext(GameMetadata metadata, Game game, string sourceName)
+        {
+            if (metadata == null)
+            {
+                return null;
+            }
+
             var links = metadata.Links ?? new List<Link>();
             var context = new OfficialStoreMetadata
             {
-                SourceName = string.IsNullOrWhiteSpace(result.IntegrationName)
-                    ? MetaDataIASettings.SourceOriginIntegration
-                    : result.IntegrationName + " (" + MetaDataIASettings.SourceOriginIntegration + ")",
+                SourceName = sourceName,
                 StoreUrl = links.Select(x => x == null ? null : x.Url).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)),
                 Title = string.IsNullOrWhiteSpace(metadata.Name) ? (game == null ? string.Empty : game.Name) : metadata.Name,
                 Description = metadata.Description,

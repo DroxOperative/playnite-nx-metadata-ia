@@ -449,6 +449,7 @@ namespace MetaDataIAPlugin
         private bool ignSourcePriorityMigrated = false;
         private bool sourceMetadataMediaSplitMigrated = false;
         private bool retroDatabaseMetadataSplitMigrated = false;
+        private bool launchBoxSourcePriorityMigrated = false;
         private bool mediaUsePsnStore = false;
         private bool usePsnStoreMetadata = true;
         private bool mediaUseXboxStore = false;
@@ -476,6 +477,8 @@ namespace MetaDataIAPlugin
         private bool mediaUseTheGamesDb = false;
         private bool useTheGamesDbMetadata = true;
         private string theGamesDbApiKey = string.Empty;
+        private bool mediaUseLaunchBox = true;
+        private bool useLaunchBoxMetadata = true;
         private bool mediaUseIgdb = false;
         private bool useIgdbMetadata = true;
         private bool mediaUseIgn = true;
@@ -555,11 +558,12 @@ namespace MetaDataIAPlugin
         public const string SourceScreenScraper = "ScreenScraper";
         public const string SourceMobyGames = "MobyGames";
         public const string SourceTheGamesDb = "TheGamesDB";
+        public const string SourceLaunchBox = "LaunchBox";
         // These defaults favour game-specific artwork first. The user can still
         // override the order independently for each media type in the settings.
-        public const string DefaultCoverSourcePriority = "Integracion de origen, SteamGridDB, Steam oficial, PlayStation Store, Xbox Store, Epic Store, IGDB, IGN, Giant Bomb, MobyGames, ScreenScraper, RAWG";
-        public const string DefaultIconSourcePriority = "SteamGridDB, ScreenScraper, Integracion de origen, Steam oficial, PlayStation Store, Xbox Store, Epic Store";
-        public const string DefaultBackgroundSourcePriority = "Integracion de origen, Steam oficial, Steam capturas, SteamGridDB, PlayStation Store, Xbox Store, Epic Store, IGDB, IGN, Giant Bomb, MobyGames, ScreenScraper, Wallhaven, RAWG";
+        public const string DefaultCoverSourcePriority = "Integracion de origen, SteamGridDB, Steam oficial, PlayStation Store, Xbox Store, Epic Store, IGDB, IGN, Giant Bomb, MobyGames, ScreenScraper, LaunchBox, RAWG";
+        public const string DefaultIconSourcePriority = "SteamGridDB, ScreenScraper, Integracion de origen, Steam oficial, PlayStation Store, Xbox Store, Epic Store, LaunchBox";
+        public const string DefaultBackgroundSourcePriority = "Integracion de origen, Steam oficial, Steam capturas, SteamGridDB, PlayStation Store, Xbox Store, Epic Store, IGDB, IGN, Giant Bomb, MobyGames, ScreenScraper, LaunchBox, Wallhaven, RAWG";
 
         public string ProviderPreset
         {
@@ -911,6 +915,7 @@ namespace MetaDataIAPlugin
         public bool IgnSourcePriorityMigrated { get { return ignSourcePriorityMigrated; } set { SetValue(ref ignSourcePriorityMigrated, value); } }
         public bool SourceMetadataMediaSplitMigrated { get { return sourceMetadataMediaSplitMigrated; } set { SetValue(ref sourceMetadataMediaSplitMigrated, value); } }
         public bool RetroDatabaseMetadataSplitMigrated { get { return retroDatabaseMetadataSplitMigrated; } set { SetValue(ref retroDatabaseMetadataSplitMigrated, value); } }
+        public bool LaunchBoxSourcePriorityMigrated { get { return launchBoxSourcePriorityMigrated; } set { SetValue(ref launchBoxSourcePriorityMigrated, value); } }
         public bool MediaUsePsnStore { get { return mediaUsePsnStore; } set { SetValue(ref mediaUsePsnStore, value); } }
         public bool UsePsnStoreMetadata { get { return usePsnStoreMetadata; } set { SetValue(ref usePsnStoreMetadata, value); } }
         public bool MediaUseXboxStore { get { return mediaUseXboxStore; } set { SetValue(ref mediaUseXboxStore, value); } }
@@ -938,6 +943,25 @@ namespace MetaDataIAPlugin
         public bool UseScreenScraperMetadata { get { return useScreenScraperMetadata; } set { SetValue(ref useScreenScraperMetadata, value); } }
         public bool UseMobyGamesMetadata { get { return useMobyGamesMetadata; } set { SetValue(ref useMobyGamesMetadata, value); } }
         public bool UseTheGamesDbMetadata { get { return useTheGamesDbMetadata; } set { SetValue(ref useTheGamesDbMetadata, value); } }
+        public bool UseLaunchBoxMetadata { get { return useLaunchBoxMetadata; } set { SetValue(ref useLaunchBoxMetadata, value); } }
+
+        // LaunchBox data comes from the separately installed "LaunchBox Metadata Provider" add-on.
+        // Enabling it makes sure it is present in every media priority list, otherwise its
+        // candidates would be filtered out (same behaviour as ScreenScraper).
+        public bool MediaUseLaunchBox
+        {
+            get { return mediaUseLaunchBox; }
+            set
+            {
+                SetValue(ref mediaUseLaunchBox, value);
+                if (value)
+                {
+                    MediaCoverSourcePriority = AppendSourcePriority(MediaCoverSourcePriority, SourceLaunchBox);
+                    MediaIconSourcePriority = AppendSourcePriority(MediaIconSourcePriority, SourceLaunchBox);
+                    MediaBackgroundSourcePriority = AppendSourcePriority(MediaBackgroundSourcePriority, SourceLaunchBox);
+                }
+            }
+        }
 
         public bool MediaUseScreenScraper
         {
@@ -1637,6 +1661,18 @@ namespace MetaDataIAPlugin
                 }
 
                 RetroDatabaseMetadataSplitMigrated = true;
+            }
+
+            if (!LaunchBoxSourcePriorityMigrated)
+            {
+                if (existingSettings && MediaUseLaunchBox)
+                {
+                    MediaCoverSourcePriority = AppendSourcePriority(MediaCoverSourcePriority, SourceLaunchBox);
+                    MediaIconSourcePriority = AppendSourcePriority(MediaIconSourcePriority, SourceLaunchBox);
+                    MediaBackgroundSourcePriority = AppendSourcePriority(MediaBackgroundSourcePriority, SourceLaunchBox);
+                }
+
+                LaunchBoxSourcePriorityMigrated = true;
             }
         }
 

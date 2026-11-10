@@ -1810,6 +1810,15 @@ namespace MetaDataIAPlugin
                     () => new MobyGamesMetadataContextService(settings).GetContextAsync(game, cancellationToken),
                     cancellationToken).ConfigureAwait(false);
             }
+
+            if (settings.UseLaunchBoxMetadata &&
+                !HasContextSource(MetaDataIASettings.SourceLaunchBox) &&
+                LaunchBoxPluginService.IsInstalled(playniteApi))
+            {
+                await TryAddOptionalContextAsync(
+                    () => new LaunchBoxPluginService(playniteApi, settings).GetContextAsync(game, cancellationToken),
+                    cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private Dictionary<string, string> BuildTokenLengths()

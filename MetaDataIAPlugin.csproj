@@ -70,6 +70,7 @@
     <Compile Include="IgdbMetadataContextService.cs" />
     <Compile Include="RetroDatabaseMetadataServices.cs" />
     <Compile Include="IgnDataService.cs" />
+    <Compile Include="LaunchBoxPluginService.cs" />
     <Compile Include="LibraryNameMatching.cs" />
     <Compile Include="VocabularyTermNormalizer.cs" />
     <Compile Include="StoreTermSanitizer.cs" />

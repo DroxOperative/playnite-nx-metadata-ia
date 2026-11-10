@@ -3,6 +3,11 @@
 
 
 
+## Unreleased — LaunchBox source
+- New LaunchBox metadata and media source, served by the separately installed "LaunchBox Metadata Provider" add-on (Jeshibu). Metadata AI asks it in background mode (no dialogs) for description, genres, developers, publishers, release date, age rating and links as factual AI context, and for one cover, icon and background candidate.
+- LaunchBox is added to the cover, icon and background priority lists (appended once for existing settings) and to the media picker source filter, settings status badges, diagnostics export and media test buttons.
+- `PlayniteIntegrationService.ToContext` converts any provider's `GameMetadata` into AI context under a chosen source name; `ToTrustedContext` now delegates to it.
+
 ## 1.4.37 — 2026-10-10
 - Overview: Appearance preset uses a dropdown selector (Audio Switcher pattern) instead of chips.
 - Settings window remembers size, position and maximized state between openings.

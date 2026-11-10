@@ -1872,6 +1872,7 @@ namespace MetaDataIAPlugin
             if (source.MediaUseScreenScraper) names.Add("ScreenScraper");
             if (source.MediaUseGiantBomb && kind != MediaKind.Logo) names.Add("Giant Bomb");
             if (source.MediaUseMobyGames && kind != MediaKind.Logo) names.Add("MobyGames");
+            if (source.MediaUseLaunchBox && kind != MediaKind.Logo) names.Add(MetaDataIASettings.SourceLaunchBox);
             if (source.MediaUseIgdb && kind != MediaKind.Logo) names.Add("IGDB");
             if (source.MediaUseIgn && (kind == MediaKind.Cover || kind == MediaKind.Background)) names.Add(MetaDataIASettings.SourceIgn);
             if (source.MediaUseWebSearch && kind != MediaKind.Logo) names.Add("Web search");
@@ -1894,6 +1895,7 @@ namespace MetaDataIAPlugin
             value.MediaUseScreenScraper &= enabled.Contains("ScreenScraper");
             value.MediaUseGiantBomb &= enabled.Contains("Giant Bomb");
             value.MediaUseMobyGames &= enabled.Contains("MobyGames");
+            value.MediaUseLaunchBox &= enabled.Contains(MetaDataIASettings.SourceLaunchBox);
             value.MediaUseIgdb &= enabled.Contains("IGDB");
             value.MediaUseIgn &= enabled.Contains(MetaDataIASettings.SourceIgn);
             return value;

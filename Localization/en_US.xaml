@@ -24,6 +24,7 @@
     <sys:String x:Key="MTDA_SourceHintGiantBomb">Promotional art for obscure or delisted titles.</sys:String>
     <sys:String x:Key="MTDA_SourceHintMobyGames">Genres and release facts for classic games, plus historical covers and screenshots.</sys:String>
     <sys:String x:Key="MTDA_SourceHintTheGamesDb">Genres and overview text for retro titles, plus community art.</sys:String>
+    <sys:String x:Key="MTDA_SourceHintLaunchBox">LaunchBox Games Database via the LaunchBox Metadata Provider add-on.</sys:String>
     <sys:String x:Key="MTDA_SourceHintIgn">Verified IGN metadata, covers and promo backgrounds.</sys:String>
     <sys:String x:Key="MTDA_SourceHintVndb">Specialist factual data for visual novels.</sys:String>
     <sys:String x:Key="MTDA_SourceHintWikidata">Community factual fallback for release and companies.</sys:String>
@@ -1075,6 +1076,13 @@ Backgrounds: {4}</sys:String>
     <sys:String x:Key="MTDA_EnableTheGamesDb">Enable TheGamesDB as a source for covers, backgrounds and logos</sys:String>
     <sys:String x:Key="MTDA_TheGamesDbKeyHelp">Create a free personal API key at api.thegamesdb.net/key.php. It is required by TheGamesDB.</sys:String>
     <sys:String x:Key="MTDA_TestTheGamesDb">Test TheGamesDB</sys:String>
+    <sys:String x:Key="MTDA_LaunchBoxHelp">Uses the LaunchBox Games Database through the separately installed "LaunchBox Metadata Provider" add-on. That add-on keeps the local database, matches games by exact title and platform, and chooses images using its own image type, region and size settings. No API key is needed.</sys:String>
+    <sys:String x:Key="MTDA_EnableLaunchBoxMetadata">Enable LaunchBox as a metadata source (description, genres, developers, publishers, release date, age rating, links)</sys:String>
+    <sys:String x:Key="MTDA_EnableLaunchBox">Enable LaunchBox as a source for covers, icons and backgrounds</sys:String>
+    <sys:String x:Key="MTDA_LaunchBoxSetupHelp">Install "LaunchBox Metadata Provider" from the Playnite add-on browser and initialize its database from its own settings first. The status badge shows whether the add-on is installed.</sys:String>
+    <sys:String x:Key="MTDA_TestLaunchBox">Test LaunchBox</sys:String>
+    <sys:String x:Key="MTDA_LaunchBoxMediaStyle">LaunchBox Games Database</sys:String>
+    <sys:String x:Key="MTDA_MediaDiagLaunchBoxNotInstalled">LaunchBox Metadata Provider add-on is not installed</sys:String>
     <sys:String x:Key="MTDA_TabAudit">Audit</sys:String>
     <sys:String x:Key="MTDA_TabLocalData">Local data</sys:String>
     <sys:String x:Key="MTDA_AuditExchangeHelp">In the audit window, mark the issues to act on, export them for review, and import the file later to restore those decisions safely.</sys:String>

@@ -1898,6 +1898,18 @@
                                 </StackPanel>
                             </Expander>
                             <Expander Style="{StaticResource MediaSourceExpander}">
+                                <Expander.Header><Grid HorizontalAlignment="Stretch"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="LaunchBox" Style="{StaticResource MediaSourceHeaderText}"/><Border Style="{StaticResource SourceStatusBadge}"><TextBlock x:Name="LaunchBoxSourceStatusText" VerticalAlignment="Center"/></Border></StackPanel><TextBlock Grid.Row="1" Text="{DynamicResource MTDA_SourceHintLaunchBox}" Style="{StaticResource MediaSourceHeaderHint}"/><StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0"><Border Style="{StaticResource SourceCapabilityBadge}"><TextBlock Text="{DynamicResource MTDA_SourceCapabilityMetadata}"/></Border><Border Style="{StaticResource SourceCapabilityBadge}"><TextBlock Text="{DynamicResource MTDA_SourceCapabilityMedia}"/></Border></StackPanel></Grid></Expander.Header>
+                                <StackPanel Margin="0">
+                                    <TextBlock Text="{DynamicResource MTDA_LaunchBoxHelp}" Style="{StaticResource HintText}" TextWrapping="Wrap"/>
+                                    <CheckBox Content="{DynamicResource MTDA_EnableLaunchBoxMetadata}"
+                                              IsChecked="{Binding Settings.UseLaunchBoxMetadata}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="{DynamicResource MTDA_EnableLaunchBox}" IsChecked="{Binding Settings.MediaUseLaunchBox}" Margin="0,0,0,8"/>
+                                    <TextBlock Text="{DynamicResource MTDA_LaunchBoxSetupHelp}" Style="{StaticResource HintText}" TextWrapping="Wrap"/>
+                                    <Button Content="{DynamicResource MTDA_TestLaunchBox}" HorizontalAlignment="Left" MinWidth="150" Margin="0,16,0,0" Click="TestLaunchBoxMedia_OnClick"/>
+                                </StackPanel>
+                            </Expander>
+                            <Expander Style="{StaticResource MediaSourceExpander}">
                                 <Expander.Header><Grid HorizontalAlignment="Stretch"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><TextBlock Text="IGN" Style="{StaticResource MediaSourceHeaderText}"/><Border Style="{StaticResource SourceStatusBadge}"><TextBlock x:Name="IgnSourceStatusText" VerticalAlignment="Center"/></Border></StackPanel><TextBlock Grid.Row="1" Text="{DynamicResource MTDA_SourceHintIgn}" Style="{StaticResource MediaSourceHeaderHint}"/><StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0"><Border Style="{StaticResource SourceCapabilityBadge}"><TextBlock Text="{DynamicResource MTDA_SourceCapabilityMetadata}"/></Border><Border Style="{StaticResource SourceCapabilityBadge}"><TextBlock Text="{DynamicResource MTDA_SourceCapabilityMedia}"/></Border></StackPanel></Grid></Expander.Header>
                                 <StackPanel Margin="0">
                                     <TextBlock Text="{DynamicResource MTDA_IgnMediaHelp}" Style="{StaticResource HintText}" TextWrapping="Wrap"/>

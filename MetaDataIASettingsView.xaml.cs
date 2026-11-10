@@ -771,7 +771,7 @@ namespace MetaDataIAPlugin
                 settings.UseOriginIntegrationForMedia, settings.MediaUseSteamOfficial || settings.MediaUseSteamScreenshots,
                 settings.MediaUseSteamGridDb || settings.MediaUseSteamGridDbBackgroundGrids, settings.MediaUsePsnStore, settings.MediaUseXboxStore,
                 settings.MediaUseEpicStore, settings.MediaUseRawg, settings.MediaUseWallhaven, settings.MediaUseScreenScraper,
-                settings.MediaUseGiantBomb, settings.MediaUseMobyGames,
+                settings.MediaUseGiantBomb, settings.MediaUseMobyGames, settings.MediaUseLaunchBox,
                 settings.MediaUseIgdb, settings.MediaUseIgn, settings.MediaUseWebSearch,
                 settings.UseVndbMetadata, settings.UseWikidataMetadata, settings.UsePcGamingWikiMetadata
             }.Count(x => x);
@@ -901,6 +901,7 @@ namespace MetaDataIAPlugin
             SetSourceStatus(GiantBombSourceStatusText, settings.MediaUseGiantBomb, !string.IsNullOrWhiteSpace(settings.GiantBombApiKey));
             SetSourceStatus(MobyGamesSourceStatusText, settings.UseMobyGamesMetadata || settings.MediaUseMobyGames, !string.IsNullOrWhiteSpace(settings.MobyGamesApiKey));
             SetSourceStatus(TheGamesDbSourceStatusText, settings.UseTheGamesDbMetadata || settings.MediaUseTheGamesDb, !string.IsNullOrWhiteSpace(settings.TheGamesDbApiKey));
+            SetSourceStatus(LaunchBoxSourceStatusText, settings.UseLaunchBoxMetadata || settings.MediaUseLaunchBox, LaunchBoxPluginService.IsInstalled());
             SetSourceStatus(IgdbSourceStatusText, settings.UseIgdbMetadata || settings.MediaUseIgdb,
                 !string.IsNullOrWhiteSpace(settings.IgdbClientId) &&
                 (!string.IsNullOrWhiteSpace(settings.IgdbClientSecret) || !string.IsNullOrWhiteSpace(settings.IgdbAccessToken)));
@@ -1597,6 +1598,7 @@ namespace MetaDataIAPlugin
             builder.AppendLine("- ScreenScraper: " + settings.MediaUseScreenScraper + " / account set " + HasValue(settings.ScreenScraperUserName) + " / developer credentials set " + (!string.IsNullOrWhiteSpace(settings.ScreenScraperDeveloperId) && !string.IsNullOrWhiteSpace(settings.ScreenScraperDeveloperPassword) ? "yes" : "no"));
             builder.AppendLine("- Giant Bomb: " + settings.MediaUseGiantBomb + " / key set " + HasValue(settings.GiantBombApiKey));
             builder.AppendLine("- MobyGames: " + settings.MediaUseMobyGames + " / key set " + HasValue(settings.MobyGamesApiKey));
+            builder.AppendLine("- LaunchBox: media " + settings.MediaUseLaunchBox + " / metadata " + settings.UseLaunchBoxMetadata + " / add-on installed " + (LaunchBoxPluginService.IsInstalled() ? "yes" : "no"));
             builder.AppendLine("- IGDB: " + settings.MediaUseIgdb + " / client id set " + HasValue(settings.IgdbClientId) + " / secret set " + HasValue(settings.IgdbClientSecret) + " / access token set " + HasValue(settings.IgdbAccessToken));
             builder.AppendLine("- PS Store: " + settings.MediaUsePsnStore);
             builder.AppendLine("- Xbox Store: " + settings.MediaUseXboxStore);
@@ -2946,6 +2948,15 @@ namespace MetaDataIAPlugin
             });
         }
 
+        private void TestLaunchBoxMedia_OnClick(object sender, RoutedEventArgs e)
+        {
+            TestMediaSource(sender as Button, MetaDataIASettings.SourceLaunchBox, s =>
+            {
+                DisableAllMediaSources(s);
+                s.MediaUseLaunchBox = true;
+            });
+        }
+
         private void TestIgdbMedia_OnClick(object sender, RoutedEventArgs e)
         {
             TestMediaSource(sender as Button, "IGDB", s =>
@@ -3308,6 +3319,12 @@ namespace MetaDataIAPlugin
                 return new Game { Name = "L.A. Noire" };
             }
 
+            if (string.Equals(sourceName, MetaDataIASettings.SourceLaunchBox, StringComparison.OrdinalIgnoreCase))
+            {
+                // No platform on the test game, so the add-on's platform check accepts any release.
+                return new Game { Name = "Super Metroid" };
+            }
+
             return new Game { Name = "Hades" };
         }
 
@@ -3350,6 +3367,7 @@ namespace MetaDataIAPlugin
             settings.MediaUseGiantBomb = false;
             settings.MediaUseMobyGames = false;
             settings.MediaUseTheGamesDb = false;
+            settings.MediaUseLaunchBox = false;
             settings.MediaUseIgdb = false;
             settings.MediaUseIgn = false;
         }
@@ -3380,6 +3398,7 @@ namespace MetaDataIAPlugin
             testSettings.UseScreenScraperMetadata = false;
             testSettings.UseMobyGamesMetadata = false;
             testSettings.UseTheGamesDbMetadata = false;
+            testSettings.UseLaunchBoxMetadata = false;
             testSettings.UseSteamMetadata = false;
             testSettings.UsePsnStoreMetadata = false;
             testSettings.UseXboxStoreMetadata = false;
@@ -5014,6 +5033,11 @@ namespace MetaDataIAPlugin
                 return settings.MediaUseMobyGames;
             }
 
+            if (string.Equals(source, MetaDataIASettings.SourceLaunchBox, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return settings.MediaUseLaunchBox;
+            }
+
             if (string.Equals(source, "IGDB", System.StringComparison.OrdinalIgnoreCase))
             {
                 return settings.MediaUseIgdb;
@@ -5039,7 +5063,8 @@ namespace MetaDataIAPlugin
                     Source("PlayStation Store"),
                     Source("Xbox Store"),
                     Source("Epic Store"),
-                    Source("ScreenScraper")
+                    Source("ScreenScraper"),
+                    Source(MetaDataIASettings.SourceLaunchBox)
                 };
             }
 
@@ -5060,7 +5085,8 @@ namespace MetaDataIAPlugin
                     Source("Wallhaven"),
                     Source("IGDB"),
                     Source("Giant Bomb"),
-                    Source("MobyGames")
+                    Source("MobyGames"),
+                    Source(MetaDataIASettings.SourceLaunchBox)
                 };
             }
 
@@ -5077,7 +5103,8 @@ namespace MetaDataIAPlugin
                 Source("ScreenScraper"),
                 Source("RAWG"),
                 Source("Giant Bomb"),
-                Source("MobyGames")
+                Source("MobyGames"),
+                Source(MetaDataIASettings.SourceLaunchBox)
             };
         }
 
