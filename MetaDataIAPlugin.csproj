@@ -69,6 +69,8 @@
     <Compile Include="MetadataHistoryService.cs" />
     <Compile Include="IgdbMetadataContextService.cs" />
     <Compile Include="RetroDatabaseMetadataServices.cs" />
+    <Compile Include="ClaudeModelCapabilities.cs" />
+    <Compile Include="OpenAiModelCapabilities.cs" />
     <Compile Include="IgnDataService.cs" />
     <Compile Include="LaunchBoxPluginService.cs" />
     <Compile Include="LibraryNameMatching.cs" />

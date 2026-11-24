@@ -333,8 +333,10 @@ namespace MetaDataIAPlugin
             return await SendOpenAICompatibleRequestAsync(userPrompt, SupportsJsonObjectResponse(), true, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<AiMetadataResult> SendOpenAICompatibleRequestAsync(string userPrompt, bool jsonObject, bool allowReasoning, CancellationToken cancellationToken)
+        private async Task<AiMetadataResult> SendOpenAICompatibleRequestAsync(string userPrompt, bool jsonObject, bool allowReasoning, CancellationToken cancellationToken, bool? includeSampling = null, bool? useCompletionTokens = null)
         {
+            var sampling = includeSampling ?? !OpenAiModelCapabilities.RejectsSamplingParameters(settings.Model);
+            var completionTokens = useCompletionTokens ?? UsesMaxCompletionTokens();
             var request = JObject.FromObject(new
             {
                 model = settings.Model,
@@ -353,7 +355,7 @@ namespace MetaDataIAPlugin
                     }
                 }
             });
-            ApplyOpenAiSampling(request, allowReasoning);
+            ApplyOpenAiSampling(request, allowReasoning, sampling, completionTokens);
 
             if (jsonObject)
             {
@@ -399,14 +401,25 @@ namespace MetaDataIAPlugin
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    // Settings some models reject outright: drop them and retry once each.
+                    if ((int)response.StatusCode == 400 && sampling && OpenAiModelCapabilities.IsSamplingRejection(responseText))
+                    {
+                        return await SendOpenAICompatibleRequestAsync(userPrompt, jsonObject, allowReasoning, cancellationToken, false, completionTokens).ConfigureAwait(false);
+                    }
+
+                    if ((int)response.StatusCode == 400 && !completionTokens && OpenAiModelCapabilities.IsMaxTokensRejection(responseText))
+                    {
+                        return await SendOpenAICompatibleRequestAsync(userPrompt, jsonObject, allowReasoning, cancellationToken, sampling, true).ConfigureAwait(false);
+                    }
+
                     if ((int)response.StatusCode == 400 && jsonObject)
                     {
-                        return await SendOpenAICompatibleRequestAsync(userPrompt, false, allowReasoning && !ResponseRejectsReasoningEffort(responseText), cancellationToken).ConfigureAwait(false);
+                        return await SendOpenAICompatibleRequestAsync(userPrompt, false, allowReasoning && !ResponseRejectsReasoningEffort(responseText), cancellationToken, sampling, completionTokens).ConfigureAwait(false);
                     }
 
                     if ((int)response.StatusCode == 400 && allowReasoning && ResponseRejectsReasoningEffort(responseText))
                     {
-                        return await SendOpenAICompatibleRequestAsync(userPrompt, false, false, cancellationToken).ConfigureAwait(false);
+                        return await SendOpenAICompatibleRequestAsync(userPrompt, false, false, cancellationToken, sampling, completionTokens).ConfigureAwait(false);
                     }
 
                     throw CreateProviderException((int)response.StatusCode, responseText);
@@ -899,8 +912,10 @@ namespace MetaDataIAPlugin
             return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, SupportsJsonObjectResponse(), true, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<string> SendOpenAICompatibleTextAsync(string systemPrompt, string userPrompt, int maxTokens, bool jsonObject, bool allowReasoning, CancellationToken cancellationToken)
+        private async Task<string> SendOpenAICompatibleTextAsync(string systemPrompt, string userPrompt, int maxTokens, bool jsonObject, bool allowReasoning, CancellationToken cancellationToken, bool? includeSampling = null, bool? useCompletionTokens = null)
         {
+            var sampling = includeSampling ?? !OpenAiModelCapabilities.RejectsSamplingParameters(settings.Model);
+            var completionTokens = useCompletionTokens ?? UsesMaxCompletionTokens();
             var request = JObject.FromObject(new
             {
                 model = settings.Model,
@@ -911,7 +926,7 @@ namespace MetaDataIAPlugin
                     new { role = "user", content = userPrompt }
                 }
             });
-            ApplyOpenAiSampling(request, allowReasoning);
+            ApplyOpenAiSampling(request, allowReasoning, sampling, completionTokens);
 
             if (jsonObject)
             {
@@ -955,14 +970,25 @@ namespace MetaDataIAPlugin
                 var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
+                    // Settings some models reject outright: drop them and retry once each.
+                    if ((int)response.StatusCode == 400 && sampling && OpenAiModelCapabilities.IsSamplingRejection(responseText))
+                    {
+                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, jsonObject, allowReasoning, cancellationToken, false, completionTokens).ConfigureAwait(false);
+                    }
+
+                    if ((int)response.StatusCode == 400 && !completionTokens && OpenAiModelCapabilities.IsMaxTokensRejection(responseText))
+                    {
+                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, jsonObject, allowReasoning, cancellationToken, sampling, true).ConfigureAwait(false);
+                    }
+
                     if ((int)response.StatusCode == 400 && jsonObject)
                     {
-                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, false, allowReasoning && !ResponseRejectsReasoningEffort(responseText), cancellationToken).ConfigureAwait(false);
+                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, false, allowReasoning && !ResponseRejectsReasoningEffort(responseText), cancellationToken, sampling, completionTokens).ConfigureAwait(false);
                     }
 
                     if ((int)response.StatusCode == 400 && allowReasoning && ResponseRejectsReasoningEffort(responseText))
                     {
-                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, false, false, cancellationToken).ConfigureAwait(false);
+                        return await SendOpenAICompatibleTextAsync(systemPrompt, userPrompt, maxTokens, false, false, cancellationToken, sampling, completionTokens).ConfigureAwait(false);
                     }
 
                     throw CreateProviderException((int)response.StatusCode, responseText);
@@ -972,19 +998,41 @@ namespace MetaDataIAPlugin
             }
         }
 
-        private async Task<string> SendAnthropicTextAsync(string systemPrompt, string userPrompt, int maxTokens, CancellationToken cancellationToken)
+        private Task<string> SendAnthropicTextAsync(string systemPrompt, string userPrompt, int maxTokens, CancellationToken cancellationToken)
         {
-            var request = new
+            return SendAnthropicTextAsync(
+                systemPrompt,
+                userPrompt,
+                maxTokens,
+                !ClaudeModelCapabilities.RejectsSamplingParameters(settings.Model),
+                ClaudeModelCapabilities.SupportsEffort(settings.Model),
+                cancellationToken);
+        }
+
+        private JObject BuildAnthropicRequest(string systemPrompt, string userPrompt, int maxTokens, bool includeSampling, bool includeEffort)
+        {
+            var request = new JObject();
+            request["model"] = settings.Model;
+            // Thinking counts toward max_tokens on models that think, so leave room for it.
+            request["max_tokens"] = includeEffort ? maxTokens + ClaudeModelCapabilities.ThinkingHeadroomTokens : maxTokens;
+            if (includeSampling)
             {
-                model = settings.Model,
-                max_tokens = maxTokens,
-                temperature = 0.0,
-                system = systemPrompt,
-                messages = new[]
-                {
-                    new { role = "user", content = userPrompt }
-                }
-            };
+                request["temperature"] = 0.0;
+            }
+
+            if (includeEffort)
+            {
+                request["output_config"] = new JObject(new JProperty("effort", ClaudeModelCapabilities.MetadataEffort));
+            }
+
+            request["system"] = systemPrompt;
+            request["messages"] = new JArray(new JObject(new JProperty("role", "user"), new JProperty("content", userPrompt)));
+            return request;
+        }
+
+        private async Task<string> SendAnthropicTextAsync(string systemPrompt, string userPrompt, int maxTokens, bool includeSampling, bool includeEffort, CancellationToken cancellationToken)
+        {
+            var request = BuildAnthropicRequest(systemPrompt, userPrompt, maxTokens, includeSampling, includeEffort);
 
             Func<HttpRequestMessage> createMessage = () =>
             {
@@ -1024,6 +1072,19 @@ namespace MetaDataIAPlugin
                 var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
+                    // Newer Claude models reject some request settings outright. When a model id
+                    // isn't recognised by ClaudeModelCapabilities, retry once without the setting
+                    // the error names instead of failing the whole request.
+                    if ((int)response.StatusCode == 400 && includeSampling && ClaudeModelCapabilities.IsSamplingRejection(responseText))
+                    {
+                        return await SendAnthropicTextAsync(systemPrompt, userPrompt, maxTokens, false, includeEffort, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if ((int)response.StatusCode == 400 && includeEffort && ClaudeModelCapabilities.IsEffortRejection(responseText))
+                    {
+                        return await SendAnthropicTextAsync(systemPrompt, userPrompt, maxTokens, includeSampling, false, cancellationToken).ConfigureAwait(false);
+                    }
+
                     throw CreateProviderException((int)response.StatusCode, responseText);
                 }
 
@@ -1306,75 +1367,16 @@ namespace MetaDataIAPlugin
             var userPrompt = await BuildUserPromptAsync(game, cancellationToken).ConfigureAwait(false);
             LogOfficialSources(game);
             LogMetadataRequest(game, userPrompt);
-            var request = new
-            {
-                model = settings.Model,
-                max_tokens = ResolveCompletionMaxTokens(),
-                temperature = 0.0,
-                system = BuildSystemPrompt(),
-                messages = new[]
-                {
-                    new
-                    {
-                        role = "user",
-                        content = userPrompt
-                    }
-                }
-            };
 
-            Func<HttpRequestMessage> createMessage = () =>
-            {
-                var message = new HttpRequestMessage(HttpMethod.Post, settings.Endpoint);
-                if (!string.IsNullOrWhiteSpace(settings.ApiKey))
-                {
-                    message.Headers.Add("x-api-key", settings.ApiKey);
-                }
-
-                message.Headers.Add("anthropic-version", "2023-06-01");
-                message.Content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-                return message;
-            };
-
-            HttpResponseMessage response;
-            try
-            {
-                response = await SendProviderRequestWithRetriesAsync(createMessage, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
-                }
-
-                throw CreateConnectionException(new TimeoutException("The provider request timed out."));
-            }
-            catch (HttpRequestException ex)
-            {
-                throw CreateConnectionException(ex);
-            }
-
-            using (response)
-            {
-                ProviderUsageService.CaptureResponseHeaders(settings, response);
-
-                var responseText = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw CreateProviderException((int)response.StatusCode, responseText);
-                }
-
-                var content = ExtractAnthropicContent(responseText);
-                var result = ParseResult(content);
-                PrepareResult(result, game);
-                await LocalizeSystemRequirementsAsync(result, game, cancellationToken).ConfigureAwait(false);
-                LogMetadataResultSummary(game, result);
-                await ResolveTermFieldsAsync(result, game, cancellationToken).ConfigureAwait(false);
-                result.ApplyConfiguredPrefixes(settings, Names(game == null ? null : game.Tags), Names(game == null ? null : game.Categories));
-                await ApplyVerifiedSeriesOrderAsync(result, game, cancellationToken).ConfigureAwait(false);
-                return result;
-            }
+            var content = await SendAnthropicTextAsync(BuildSystemPrompt(), userPrompt, ResolveCompletionMaxTokens(), cancellationToken).ConfigureAwait(false);
+            var result = ParseResult(content);
+            PrepareResult(result, game);
+            await LocalizeSystemRequirementsAsync(result, game, cancellationToken).ConfigureAwait(false);
+            LogMetadataResultSummary(game, result);
+            await ResolveTermFieldsAsync(result, game, cancellationToken).ConfigureAwait(false);
+            result.ApplyConfiguredPrefixes(settings, Names(game == null ? null : game.Tags), Names(game == null ? null : game.Categories));
+            await ApplyVerifiedSeriesOrderAsync(result, game, cancellationToken).ConfigureAwait(false);
+            return result;
         }
 
         private async Task ApplyVerifiedSeriesOrderAsync(AiMetadataResult result, Game game, CancellationToken cancellationToken)
@@ -1963,11 +1965,44 @@ namespace MetaDataIAPlugin
             return fields != null && fields.TryGetValue(name, out enabled) && enabled;
         }
 
-        private void ApplyOpenAiSampling(JObject request, bool allowReasoning)
+        // OpenAI's own API needs max_completion_tokens for its reasoning models. Gateways such as
+        // OpenRouter translate max_tokens themselves; any other endpoint that asks for the new
+        // name is handled by the retry in the senders.
+        private bool UsesMaxCompletionTokens()
         {
+            return OpenAiModelCapabilities.IsReasoningModel(settings.Model) &&
+                   (settings.ProviderPreset == MetaDataIASettings.ProviderOpenAI ||
+                    settings.ProviderPreset == MetaDataIASettings.ProviderCustom);
+        }
+
+        private void ApplyOpenAiSampling(JObject request, bool allowReasoning, bool includeSampling, bool useCompletionTokens)
+        {
+            var reasoningModel = OpenAiModelCapabilities.IsReasoningModel(settings.Model);
+            if (reasoningModel && request["max_tokens"] != null)
+            {
+                // Reasoning tokens count toward the output limit, so leave room for them.
+                request["max_tokens"] = (int)request["max_tokens"] + OpenAiModelCapabilities.ReasoningHeadroomTokens;
+            }
+
+            if (useCompletionTokens && request["max_tokens"] != null)
+            {
+                // OpenAI reasoning models reject max_tokens and want max_completion_tokens.
+                request["max_completion_tokens"] = (int)request["max_tokens"];
+                request.Remove("max_tokens");
+            }
+
             if (settings.ProviderPreset != MetaDataIASettings.ProviderGemini)
             {
-                request["temperature"] = 0.0;
+                if (includeSampling)
+                {
+                    request["temperature"] = 0.0;
+                }
+
+                if (allowReasoning && reasoningModel)
+                {
+                    request["reasoning_effort"] = OpenAiModelCapabilities.MetadataReasoningEffort;
+                }
+
                 return;
             }
 

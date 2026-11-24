@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Provider request fixes
+- Fixed 400 errors ("`temperature` is deprecated for this model") on Claude Opus 4.7 and later, all Claude 5.x models (Haiku, Sonnet, Opus 5.5) and Fable: requests to these models no longer send `temperature`.
+- Claude models that support it get thinking effort "low" plus 8192 tokens of `max_tokens` headroom, since thinking counts toward `max_tokens` and could otherwise cut off the JSON answer.
+- OpenAI reasoning models (GPT-5 family, o-series) no longer get `temperature`, get `reasoning_effort` "low" and the same token headroom, and use `max_completion_tokens` on the OpenAI and custom presets.
+- All providers: a 400 that names `temperature`/`top_p`/`top_k` or asks for `max_completion_tokens` retries once without that setting, before the existing JSON-mode and reasoning-effort fallbacks, which now keep any setting already dropped.
+- Claude metadata generation reuses the shared Claude request code; new `ClaudeModelCapabilities` and `OpenAiModelCapabilities` hold the per-model rules.
+
 
 
 
